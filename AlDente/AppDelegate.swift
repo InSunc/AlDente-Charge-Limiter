@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
 
         let contentView = ContentView()
-
+        
         // Create the popover
         let popover = NSPopover()
         popover.contentSize = NSSize(width: 400, height: 600)
@@ -51,10 +51,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.popover = popover
 
         let statusBar = NSStatusBar.system
-        statusBarItem = statusBar.statusItem(withLength: NSStatusItem.squareLength)
+        statusBarItem = statusBar.statusItem(withLength: 50)
         statusBarItem.button?.image = NSImage(named: "menubaricon")!
+        statusBarItem.button?.imagePosition = .imageRight
         statusBarItem.button?.action = #selector(togglePopover(_:))
+        statusBarItem.button?.alignment = .center
         
+        
+//        constructMenu()
+
         Helper.instance.setPlatformKey()
 
         Helper.instance.checkHelperVersion{(foundHelper) in
@@ -77,15 +82,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if(Helper.instance.isInitialized){
                 Helper.instance.getChargingInfo { (Name, Capacity, IsCharging, MaxCapacity) in
                     
+                    if(PersistanceManager.instance.showPercentage) {
+                        self.statusBarItem.button?.title = String(Capacity)
+                    }
                     
                     if(!PersistanceManager.instance.oldKey){
-                        if(Capacity < SMCPresenter.shared.value){
+                        if(SMCPresenter.shared.chargingEnabled && Capacity < SMCPresenter.shared.value){
                             actionMsg = "NEED TO CHARGE"
                             if(Helper.instance.chargeInhibited){
                                 Helper.instance.enableCharging()
                             }
                             Helper.instance.disableSleep()
- 
+
                         }
                         else{
                             actionMsg = "IS PERFECT"
@@ -93,7 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                 Helper.instance.disableCharging()
                             }
                             Helper.instance.enableSleep()
-                            
+
                         }
                         print("TARGET: ",SMCPresenter.shared.value,
                               " CURRENT: ",String(Capacity),
@@ -128,6 +136,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             }
         }
+    }
+    
+    func select() {
+        print("action worked")
+    }
+    
+    func constructMenu() {
+        let menu = NSMenu()
+        
+        let frame = CGRect(origin: .zero, size: CGSize(width: 100, height: 50))
+        let view = NSView(frame: frame)
+        let switchBtn = NSSwitch(frame: frame)
+        switchBtn.cell?.title = "Enable charging"
+        view.addSubview(switchBtn)
+        
+        let item = NSMenuItem()
+        item.view = view
+        
+        let a = menu.addItem(withTitle: "Enable charging", action: "select", keyEquivalent: "E")
+        a.view?.addSubview(switchBtn)
+        
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        
+//        statusBarItem.menu = menu
     }
 
 }
